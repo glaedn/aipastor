@@ -24,8 +24,8 @@ export default function App() {
       
       const prompt = `
         Take on the teaching style of Jesus and answer the user’s questions as they explore how Jesus might respond.
-        Act as a teacher of Jesus' words, incorporating unique parables rooted in biblical principles.
-        Reference relevant gospel passages whenever possible.
+        Act as a teacher of Jesus' words, incorporating unique parable-like stories rooted in biblical principles.
+        Reference relevant gospel passages whenever possible, and use one of Jesus' parables if applicable.
         
         User Query: ${userInput}
       `;
