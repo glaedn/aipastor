@@ -1,6 +1,7 @@
 import './App.css';
 import React, { useState } from 'react';
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import ReactMarkdown from 'react-markdown';
 import FlatList from 'flatlist-react';
 
 export default function App() {
@@ -50,10 +51,10 @@ export default function App() {
         list={messages}
         renderItem={(item) => (
           <div style={ item.sender === 'pastor' ? styles.pastor : styles.user }>
-            <p>{item.text}</p>
+            <ReactMarkdown>{item.text}</ReactMarkdown>
           </div>
         )}
-        renderWhenEmpty={() => <div style={styles.chatHistory}>No messages yet</div>}
+        renderWhenEmpty={() => <div style={styles.chatHistory}>What questions do you have for the AI Pastor?</div>}
         style={styles.chatHistory}
       />
       {loading && <div style={styles.loading}>Loading...</div>}
