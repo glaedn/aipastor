@@ -1,16 +1,18 @@
 import './App.css';
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import FlatList from 'flatlist-react';
 
 export default function App() {
-  const [messages, setMessages] = useState([]); // { id, sender, text }
+  const [messages, setMessages] = useState([]); // Each message: { id, sender, text }
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
-    const userMessage = { id: Date.now().toString(), sender: 'user', text: input };
+    // Save current input to use later in the prompt
+    const userInput = input;
+    const userMessage = { id: Date.now().toString(), sender: 'user', text: userInput };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setLoading(true);
@@ -18,18 +20,22 @@ export default function App() {
     try {
       const genAI = new GoogleGenerativeAI(process.env.REACT_APP_API_KEY);
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
+      
       const prompt = `
-      Take on the teaching style of Jesus and answer the user’s questions as they explore how Jesus might respond.  
-      Act as a teacher of Jesus' words, incorporating unique parables rooted in biblical principles.  
-      Reference relevant gospel passages whenever possible.  
-
-      User Query: ${input}
+        Take on the teaching style of Jesus and answer the user’s questions as they explore how Jesus might respond.
+        Act as a teacher of Jesus' words, incorporating unique parables rooted in biblical principles.
+        Reference relevant gospel passages whenever possible.
+        
+        User Query: ${userInput}
       `;
 
       const result = await model.generateContent(prompt);
       console.log(result.response.text());
-      const pastorReply = { id: (Date.now() + 1).toString(), sender: 'pastor', text: result.response.text() };
+      const pastorReply = { 
+        id: (Date.now() + 1).toString(), 
+        sender: 'pastor', 
+        text: result.response.text() 
+      };
       setMessages(prev => [...prev, pastorReply]);
     } catch (error) {
       console.error('Error:', error);
@@ -39,43 +45,90 @@ export default function App() {
   };
 
   return (
-    <View style={styles.container}>
+    <div style={styles.container}>
       <FlatList
-        data={messages}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => (
-          <View style={[styles.message, item.sender === 'pastor' ? styles.pastor : styles.user]}>
-            <Text>{item.text}</Text>
-          </View>
+        list={messages}
+        renderItem={(item) => (
+          <div style={ item.sender === 'pastor' ? styles.pastor : styles.user }>
+            <p>{item.text}</p>
+          </div>
         )}
-        contentContainerStyle={styles.chatHistory}
+        renderWhenEmpty={() => <div style={styles.chatHistory}>No messages yet</div>}
+        style={styles.chatHistory}
       />
-      {loading && <ActivityIndicator size="small" color="#0000ff" />}
-      <View style={styles.inputContainer}>
-        <TextInput
+      {loading && <div style={styles.loading}>Loading...</div>}
+      <div style={styles.inputContainer}>
+        <input
           style={styles.input}
           value={input}
-          onChangeText={setInput}
+          onChange={(e) => setInput(e.target.value)}
           placeholder="Ask your question..."
-          onSubmitEditing={sendMessage}
+          onKeyDown={(e) => { if (e.key === 'Enter') sendMessage(); }}
         />
-        <TouchableOpacity onPress={sendMessage} style={styles.sendButton} disabled={loading}>
-          {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.sendButtonText}>Send</Text>}
-        </TouchableOpacity>
-
-      </View>
-    </View>
+        <button onClick={sendMessage} style={styles.sendButton} disabled={loading}>
+          {loading ? 'Loading...' : <span style={styles.sendButtonText}>Send</span>}
+        </button>
+      </div>
+    </div>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 10, backgroundColor: '#fff' },
-  chatHistory: { paddingBottom: 20 },
-  message: { marginVertical: 5, padding: 10, borderRadius: 5 },
-  user: { backgroundColor: '#e0f7fa', alignSelf: 'flex-end' },
-  pastor: { backgroundColor: '#fff9c4', alignSelf: 'flex-start' },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderColor: '#ccc', padding: 5 },
-  input: { flex: 1, height: 40, borderColor: '#ccc', borderWidth: 1, borderRadius: 5, paddingHorizontal: 10 },
-  sendButton: { marginLeft: 10, backgroundColor: '#007aff', padding: 10, borderRadius: 5 },
-  sendButtonText: { color: '#fff' },
-});
+const styles = {
+  container: { 
+    display: 'flex', 
+    flexDirection: 'column', 
+    height: '100vh', 
+    backgroundColor: '#fff', 
+    padding: '10px' 
+  },
+  chatHistory: { 
+    flex: 1, 
+    overflowY: 'auto', 
+    paddingBottom: '20px' 
+  },
+  user: { 
+    backgroundColor: '#e0f7fa', 
+    alignSelf: 'flex-end', 
+    margin: '5px', 
+    padding: '10px', 
+    borderRadius: '5px', 
+    maxWidth: '60%' 
+  },
+  pastor: { 
+    backgroundColor: '#fff9c4', 
+    alignSelf: 'flex-start', 
+    margin: '5px', 
+    padding: '10px', 
+    borderRadius: '5px', 
+    maxWidth: '60%' 
+  },
+  inputContainer: { 
+    display: 'flex', 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    borderTop: '1px solid #ccc', 
+    padding: '5px' 
+  },
+  input: { 
+    flex: 1, 
+    height: '40px', 
+    border: '1px solid #ccc', 
+    borderRadius: '5px', 
+    padding: '0 10px' 
+  },
+  sendButton: { 
+    marginLeft: '10px', 
+    backgroundColor: '#007aff', 
+    padding: '10px', 
+    borderRadius: '5px', 
+    border: 'none', 
+    cursor: 'pointer' 
+  },
+  sendButtonText: { 
+    color: '#fff' 
+  },
+  loading: { 
+    margin: '10px', 
+    textAlign: 'center' 
+  }
+};
